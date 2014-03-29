@@ -19,50 +19,50 @@ class PolicyAccounting(object):
     """
      Each policy has its own instance of accounting.
     """
-    def __init__(self, policy_id):
+    def __init__(self, policy_id): #Constructor defining arguments or PolicyAccounting
         self.policy = Policy.query.filter_by(id=policy_id).one()
 
-        if not self.policy.invoices:
+        if not self.policy.invoices: #If there are no invoices create invoices
             self.make_invoices()
 
-    def return_account_balance(self, date_cursor=None):
-        if not date_cursor:
+    def return_account_balance(self, date_cursor=None): #Returning the account balance
+        if not date_cursor: #If there is not date specified, then create time and the date when it is being accessed
             date_cursor = datetime.now().date()
 
         invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
                                 .filter(Invoice.bill_date < date_cursor)\
                                 .order_by(Invoice.bill_date)\
                                 .all()
-        due_now = 0
+        due_now = 0 #Variable to set up the amount due
         for invoice in invoices:
-            due_now += invoice.amount_due
+            due_now += invoice.amount_due #Adding to due_now by accessing the amount due on the invoices
 
-        payments = Payment.query.filter_by(policy_id=self.policy.id)\
+        payments = Payment.query.filter_by(policy_id=self.policy.id)\ #Finding the payments that have already been made
                                 .filter(Payment.transaction_date < date_cursor)\
                                 .all()
         for payment in payments:
-            due_now -= payment.amount_paid
+            due_now -= payment.amount_paid #Subtracting the payments already made from the amount_due
 
-        return due_now
+        return due_now #returning the account balance that needs to still be paid
 
-    def make_payment(self, contact_id=None, date_cursor=None, amount=0):
+    def make_payment(self, contact_id=None, date_cursor=None, amount=0): #Function for making a payment on account
         if not date_cursor:
             date_cursor = datetime.now().date()
 
-        if not contact_id:
+        if not contact_id: #If there is no contact_id then create one from the name_insured of the poilcy
             try:
                 contact_id = self.policy.named_insured
             except:
                 pass
 
-        payment = Payment(self.policy.id,
+        payment = Payment(self.policy.id, #Specifying for payment the policy.id, contact_id, amount, and date
                           contact_id,
                           amount,
                           date_cursor)
         db.session.add(payment)
-        db.session.commit()
+        db.session.commit() #Committing the amount of the payment
 
-        return payment
+        return payment #Returns the payment received
 
     def evaluate_cancellation_pending_due_to_non_pay(self, date_cursor=None):
         """
@@ -73,16 +73,16 @@ class PolicyAccounting(object):
         """
         pass
 
-    def evaluate_cancel(self, date_cursor=None):
+    def evaluate_cancel(self, date_cursor=None): #Function for cancelling an account
         if not date_cursor:
             date_cursor = datetime.now().date()
 
-        invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
-                                .filter(Invoice.cancel_date <= date_cursor)\
+        invoices = Invoice.query.filter_by(policy_id=self.policy.id)\ #Creating invoices that the policy_id=self.policy.id
+                                .filter(Invoice.cancel_date <= date_cursor)\ #Filter by the invoice cancel date is less than or equal to the date specified or created
                                 .order_by(Invoice.bill_date)\
                                 .all()
 
-        for invoice in invoices:
+        for invoice in invoices: #For every invoice check to see if the invoice is not the same as self.return_account_balance(invoice.cancel_date)
             if not self.return_account_balance(invoice.cancel_date):
                 continue
             else:
@@ -92,26 +92,37 @@ class PolicyAccounting(object):
             print "THIS POLICY SHOULD NOT CANCEL"
 
 
-    def make_invoices(self):
+    def make_invoices(self): #Function to make invoices with no arguments
         for invoice in self.policy.invoices:
             invoice.delete()
 
-        billing_schedules = {'Annual': None, 'Semi-Annual': 3, 'Quarterly': 4, 'Monthly': 12}
+        billing_schedules = {'Annual': None, 'Semi-Annual': 3, 'Quarterly': 4, 'Monthly': 12} #Creating a dictionary that specifies the definitions of each word
 
-        invoices = []
-        first_invoice = Invoice(self.policy.id,
+        invoices = [] #Creating a list names invoices
+        first_invoice = Invoice(self.policy.id, #Creating the first invoice from using Invoice() from models.py
                                 self.policy.effective_date, #bill_date
                                 self.policy.effective_date + relativedelta(months=1), #due
                                 self.policy.effective_date + relativedelta(months=1, days=14), #cancel
                                 self.policy.annual_premium)
-        invoices.append(first_invoice)
+        invoices.append(first_invoice) #Placing first invoice into the list names invocies
 
-        if self.policy.billing_schedule == "Annual":
+        if self.policy.billing_schedule == "Annual": #If the billing schedule is equal to Annual then pass
             pass
-        elif self.policy.billing_schedule == "Two-Pay":
+        elif self.policy.billing_schedule == "Two-Pay": #Else if the billing schedule is equto to Two-Pay
+            first_invoice.amount_due = first_invoice.amount_due / billing_schedules.get(self.policy.billing_schedule) #Figuring out amount due from first invoice
+            for i in range(1, billing_schedules.get(self.policy.billing_schedule)): #For every object in the range(starting at one,stopping at billing schedule)
+                months_after_eff_date = i*6 #Multiplies by 6 to split 12 months into two payments
+                bill_date = self.policy.effective_date + relativedelta(months=months_after_eff_date)
+                invoice = Invoice(self.policy.id, #Create an invoice for this specification
+                                  bill_date,
+                                  bill_date + relativedelta(months=1),
+                                  bill_date + relativedelta(months=1, days=14),
+                                  self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
+                invoices.append(invoice)
+        elif self.policy.billing_schedule == "Quarterly": #Else if billing schedule is Quarterly
             first_invoice.amount_due = first_invoice.amount_due / billing_schedules.get(self.policy.billing_schedule)
             for i in range(1, billing_schedules.get(self.policy.billing_schedule)):
-                months_after_eff_date = i*6
+                months_after_eff_date = i*3 #Multiplies by 3 to split 12 months into 4 payments
                 bill_date = self.policy.effective_date + relativedelta(months=months_after_eff_date)
                 invoice = Invoice(self.policy.id,
                                   bill_date,
@@ -119,18 +130,7 @@ class PolicyAccounting(object):
                                   bill_date + relativedelta(months=1, days=14),
                                   self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
                 invoices.append(invoice)
-        elif self.policy.billing_schedule == "Quarterly":
-            first_invoice.amount_due = first_invoice.amount_due / billing_schedules.get(self.policy.billing_schedule)
-            for i in range(1, billing_schedules.get(self.policy.billing_schedule)):
-                months_after_eff_date = i*3
-                bill_date = self.policy.effective_date + relativedelta(months=months_after_eff_date)
-                invoice = Invoice(self.policy.id,
-                                  bill_date,
-                                  bill_date + relativedelta(months=1),
-                                  bill_date + relativedelta(months=1, days=14),
-                                  self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
-                invoices.append(invoice)
-        elif self.policy.billing_schedule == "Monthly":
+        elif self.policy.billing_schedule == "Monthly": #Else if billing schedule is Monthly
             first_invoice.amount_due = first_invoice.amount_due / billing_schedules.get(self.policy.billing_schedule)
             for i in range(1, billing_schedules.get(self.policy.billing_schedule)):
                 months_after_eff_date = i*1 #Changing variable i to be multiplied by 1 so we have 12 monthly invoices
@@ -142,9 +142,9 @@ class PolicyAccounting(object):
                                   self.policy.annual_premium / billing_schedules.get(self.policy.billing_schedule))
                 invoices.append(invoice)
         else:
-            print "You have chosen a bad billing schedule."
+            print "You have chosen a bad billing schedule." #If all the if and elif statements are False then print a bad billing schedule
 
-        for invoice in invoices:
+        for invoice in invoices: #For every invoice add the invoice and commit to database
             db.session.add(invoice)
         db.session.commit()
 
