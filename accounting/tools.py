@@ -65,13 +65,19 @@ class PolicyAccounting(object):
         return payment #Returns the payment received
 
     def evaluate_cancellation_pending_due_to_non_pay(self, date_cursor=None):
-        """
-         If this function returns true, an invoice
-         on a policy has passed the due date without
-         being paid in full. However, it has not necessarily
-         made it to the cancel_date yet.
-        """
-        pass
+        if not date_cursor:
+            date_cursor = datetime.now().date()
+        
+        invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
+            .filter(Invoice.cancel_date <= date_cursor)\
+            .order_by(Invoice.bill_date)\
+            .all()
+        
+        for invoice in invoices: #For every invoice if there is an amount returned then the cancellation is pending until the cancel date
+            if self.return_account_balance(invoice.cancel_date):
+                print "THIS POLICY IS IN CANCELLATION DUE TO NON PAY. ONLY AN AGENT MAY MAKE A PAYMENT"
+            else:
+                print "THIS POLICY SHOULD NOT CANCEL"
 
     def evaluate_cancel(self, date_cursor=None): #Function for cancelling an account
         if not date_cursor:
