@@ -101,10 +101,10 @@ class PolicyAccounting(object):
         invoices = [] #Creating a list names invoices
         first_invoice = Invoice(self.policy.id, #Creating the first invoice from using Invoice() from models.py
                                 self.policy.effective_date, #bill_date
-                                self.policy.effective_date + relativedelta(months=1), #due
-                                self.policy.effective_date + relativedelta(months=1, days=14), #cancel
-                                self.policy.annual_premium)
-        invoices.append(first_invoice) #Placing first invoice into the list names invocies
+                                self.policy.effective_date + relativedelta(months=1), #due date
+                                self.policy.effective_date + relativedelta(months=1, days=14), #cancel date two weeks after
+                                self.policy.annual_premium) #Amount due
+        invoices.append(first_invoice) #Placing first invoice into the list named invoices
 
         if self.policy.billing_schedule == "Annual": #If the billing schedule is equal to Annual then pass
             pass
