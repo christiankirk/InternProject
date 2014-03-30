@@ -161,7 +161,7 @@ class PolicyAccounting(object):
 # The functions below are for the db and 
 # shouldn't need to be edited.
 ################################
-def build_or_refresh_db():
+def build_or_refresh_db(): #Populates or refreshed database
     db.drop_all()
     db.create_all()
     insert_data()
@@ -169,7 +169,7 @@ def build_or_refresh_db():
 
 def insert_data():
     #Contacts
-    contacts = []
+    contacts = [] #Contact list to insert into db
     john_doe_agent = Contact('John Doe', 'Agent')
     contacts.append(john_doe_agent)
     john_doe_insured = Contact('John Doe', 'Named Insured')
@@ -187,7 +187,7 @@ def insert_data():
         db.session.add(contact)
     db.session.commit()
 
-    policies = []
+    policies = [] #Policy list to insert into db
     p1 = Policy('Policy One', date(2015, 1, 1), 365)
     p1.billing_schedule = 'Annual'
     p1.agent = bob_smith.id
