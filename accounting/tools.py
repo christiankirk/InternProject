@@ -211,6 +211,12 @@ def insert_data():
     p4.agent = john_doe_agent.id
     policies.append(p4)
 
+    p5 = Policy('Policy Four', date(2015, 2, 1), 500) #Created another policy 4 for Bob Smith's client
+    p5.bill_schedule = 'Two-Pay'
+    p5.name_insured = john_doe_insured.id
+    p5.agent = bob_smith.id
+    policies.append(p5)
+
     for policy in policies:
         db.session.add(policy)
     db.session.commit()
