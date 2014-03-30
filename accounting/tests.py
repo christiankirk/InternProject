@@ -111,3 +111,8 @@ class TestReturnAccountBalance(unittest.TestCase):
         self.policy.billing_schedule = "Monthly"
         pa = PolicyAccounting(self.policy.id)
         self.assertEquals(pa.return_account_balance(date_cursor=self.policy.effective_date + relativedelta(months=1)), 100)
+
+
+if __name__== '__main__': #Put on to run the program quickly to see the changes I have made
+    unittest.main()
+
