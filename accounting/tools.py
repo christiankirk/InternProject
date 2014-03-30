@@ -92,7 +92,10 @@ class PolicyAccounting(object):
             if not self.return_account_balance(invoice.cancel_date):
                 continue
             else:
-                print "THIS POLICY SHOULD HAVE CANCELED"
+                date_cancelled = datetime.now().date()
+                new_status = Policy.query.filter_by(policy_number).first()
+                new_status.status = 'Cancelled'
+                print "THIS POLICY WAS CANCELLED ON: ", date_cancelled
                 break
         else:
             print "THIS POLICY SHOULD NOT CANCEL"
