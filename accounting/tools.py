@@ -193,8 +193,8 @@ def insert_data():
     p1.agent = bob_smith.id
     policies.append(p1)
 
-    p2 = Policy('Policy Two', date(2015, 2, 1), 1600)
-    p2.billing_schedule = 'Quarterly'
+    p2 = Policy('Policy Three', date(2015, 2, 1), 1200)
+    p2.billing_schedule = 'Monthly'
     p2.named_insured = anna_white.id
     p2.agent = joe_lee.id
     policies.append(p2)
@@ -226,5 +226,6 @@ def insert_data():
 
     payment_for_p2 = Payment(p2.id, anna_white.id, 400, date(2015, 2, 1))
     db.session.add(payment_for_p2)
+    db.session.delete(invoice[0]) #Delete old Quarterly invoice
     db.session.commit()
 
