@@ -81,29 +81,22 @@ class TestReturnAccountBalance(unittest.TestCase):
     def setUp(self):
         self.payments = []
 
-    def tearDown(self):
-        for invoice in self.policy.invoices:
-            db.session.delete(invoice)
-        for payment in self.payments:
-            db.session.delete(payment)
-        db.session.commit()
-
     def test_annual_on_eff_date(self):
         self.policy.billing_schedule = "Annual"
-        pa = PolicyAccounting(self.policy.id)
-        self.assertEquals(pa.return_account_balance(date_cursor=self.policy.effective_date), 1200)
+        pa = PolicyAccounting(self.policy.id) #Used relativedelta to specify the months for the amount that should have been paid
+        self.assertEquals(pa.return_account_balance(date_cursor=self.policy.effective_date + relativedelta(months=12)), 1200)
 
     def test_quarterly_on_eff_date(self):
         self.policy.billing_schedule = "Quarterly"
         pa = PolicyAccounting(self.policy.id)
-        self.assertEquals(pa.return_account_balance(date_cursor=self.policy.effective_date), 300)
+        self.assertEquals(pa.return_account_balance(date_cursor=self.policy.effective_date + relativedelta(months=3)), 300)
 
     def test_quarterly_on_last_installment_bill_date(self):
         self.policy.billing_schedule = "Quarterly"
         pa = PolicyAccounting(self.policy.id)
         invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
                                 .order_by(Invoice.bill_date).all()
-        self.assertEquals(pa.return_account_balance(date_cursor=invoices[3].bill_date), 1200)
+        self.assertEquals(pa.return_account_balance(date_cursor=invoices[3].bill_date + relativedelta(months=1)), 1200)
 
     def test_quarterly_on_second_installment_bill_date_with_full_payment(self):
         self.policy.billing_schedule = "Quarterly"
@@ -111,10 +104,10 @@ class TestReturnAccountBalance(unittest.TestCase):
         invoices = Invoice.query.filter_by(policy_id=self.policy.id)\
                                 .order_by(Invoice.bill_date).all()
         self.payments.append(pa.make_payment(contact_id=self.policy.named_insured,
-                                             date_cursor=invoices[1].bill_date, amount=600))
-        self.assertEquals(pa.return_account_balance(date_cursor=invoices[1].bill_date), 0)
+                                            date_cursor=invoices[1].bill_date, amount=600))
+        self.assertEquals(pa.return_account_balance(date_cursor=invoices[1].bill_date + relativedelta(months=1)),0)
 
     def test_monthly_on_eff_date(self):
         self.policy.billing_schedule = "Monthly"
         pa = PolicyAccounting(self.policy.id)
-        self.assertEquals(pa.return_account_balance(date_cursor=self.policy.effective_date), 100)
+        self.assertEquals(pa.return_account_balance(date_cursor=self.policy.effective_date + relativedelta(months=1)), 100)
